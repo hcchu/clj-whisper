@@ -17,9 +17,11 @@
                :seconds-per-point :uint32
                :points :uint32))
 
-(defcodec wsp-header
-  (ordered-map :metadata wsp-metadata
-               :archive-info (repeat 4 archive-info)))
+(defcodec wsp-point
+  (ordered-map :timestamp :uint32
+               :value :float64))
+
+(defcodec wsp-data (repeated wsp-point :prefix :none))
 
 (def aggregation-methods {:0 "unknown"
                           :1 "average"
@@ -68,8 +70,9 @@
     (do
       (defcodec archives
         (ordered-map :metadata wsp-metadata
-                     :archive-info (repeat (:archive-count wmetadata) archive-info)))
-      (decode archives data false))))
+                     :archive-info (repeat (:archive-count wmetadata) archive-info)
+                     :points wsp-data))
+      (decode archives data))))
 
 ; returns size of archive in bytes
 (defn archive-size [archive-info]
