@@ -72,7 +72,19 @@
         (ordered-map :metadata wsp-metadata
                      :archive-info (repeat (:archive-count wmetadata) archive-info)
                      :points wsp-data))
-      (decode archives data))))
+      (let [wsp-all (decode archives data)]
+        ;(update-in wsp-all [:points] (apply merge 
+        ;                                  (map 
+        ;                                    #(hash-map 
+        ;                                       (keyword (str (:timestamp %)))
+        ;                                       (:value %)))))))))
+        {:metadata (:metadata wsp-all)
+         :archive-info (:archive-info wsp-all)
+         :points (apply merge (map #(sorted-map
+                                       (keyword (str (:timestamp %)))
+                                       (:value %)) (:points wsp-all)))}
+          ))))
+
 
 ; returns size of archive in bytes
 (defn archive-size [archive-info]
