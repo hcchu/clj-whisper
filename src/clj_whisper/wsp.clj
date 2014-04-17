@@ -59,7 +59,7 @@
       (print-archive-info (:archive-info (decode archives data false)))
       (println))))
 
-(defn whisper-info [filename]
+(defn whisper-read [filename]
   (let [data (with-open [f (input-stream filename)]
                (let [size (.length (file filename))
                      ba (byte-array size)]
@@ -73,18 +73,12 @@
                      :archive-info (repeat (:archive-count wmetadata) archive-info)
                      :points wsp-data))
       (let [wsp-all (decode archives data)]
-        ;(update-in wsp-all [:points] (apply merge 
-        ;                                  (map 
-        ;                                    #(hash-map 
-        ;                                       (keyword (str (:timestamp %)))
-        ;                                       (:value %)))))))))
         {:metadata (:metadata wsp-all)
          :archive-info (:archive-info wsp-all)
          :points (apply merge (map #(sorted-map
                                        (keyword (str (:timestamp %)))
                                        (:value %)) (:points wsp-all)))}
           ))))
-
 
 ; returns size of archive in bytes
 (defn archive-size [archive-info]
@@ -97,4 +91,23 @@
 ; returns byte offset of the last point in an archive
 (defn archive-end [archive-info]
   (+ (:offset archive-info) (archive-size archive-info)))
+
+(declare now)
+(declare yesterday)
+(defn whisper-fetch 
+  "Returns map of points within the specified time range"
+  [wsp & {:keys [from until]
+          :or {from yesterday until now}}]
+    (let [points (:points wsp)
+          now (int (/ (System/currentTimeMillis) 1000))
+          yesterday (- now (* 60 60 24))]
+    (apply sorted-map 
+           (flatten 
+             (subseq 
+               (apply sorted-map
+                      (flatten 
+                        (subseq points < (keyword (str until)))))
+               > (keyword (str from)))))))
+
+
 
